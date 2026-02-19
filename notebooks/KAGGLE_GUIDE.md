@@ -8,7 +8,7 @@ on Kaggle's free tier.  Read it fully before you run anything.
 - **Patient-level split** (NB02): Uses `GroupShuffleSplit` on DICOM `PatientID` to
   prevent data leakage between train/val sets.
 - **Dataset-specific normalization** (NB02→NB03+): Computes actual mean/std on
-  cached PNGs instead of using ImageNet defaults.
+  cached NPY arrays instead of using ImageNet defaults.
 - **NaN divergence guard** (NB03): Training aborts early if loss becomes NaN/Inf.
 - **Health-check cells**: Every notebook ends with an automated validation cell
   that saves `health_check_nbXX.json` and raises on failure.
@@ -65,8 +65,8 @@ The dataset is then available at:
 1. Loads CSV, parses labels
 2. **Extracts PatientID** from all DICOM headers (~10-20 min, metadata-only read)
 3. **Patient-level train/val split** using `GroupShuffleSplit` (no slice leakage)
-4. Converts all DICOMs → 3-channel windowed PNGs (parallel, resume-safe)
-5. **Computes dataset normalization stats** on cached PNGs
+4. Converts all DICOMs → 3-channel windowed NPY arrays (parallel, resume-safe)
+5. **Computes dataset normalization stats** on cached NPY arrays
 6. Saves `manifest.csv` (with `patient_id` column), `normalization_stats.json`
 7. Runs health-check validations
 
@@ -167,7 +167,7 @@ Add NB02 cache as data.  Run with GPU.  No commit needed (results saved to worki
 ```python
 MODEL_PATH  = '/kaggle/input/ich-train-session-4/best_model.pth'  # ← last session
 CHECKPOINT  = '/kaggle/input/ich-train-session-4/checkpoint.pth'
-CACHE_DIR   = '/kaggle/input/ich-preprocess-cache/cache'
+NPY_CACHE_DIR = '/kaggle/input/ich-preprocess-cache/cache'
 ```
 
 Add both NB02 cache + final NB03 session as data.
@@ -185,7 +185,7 @@ Note the commit name, e.g. `ich-calibration`.
 ## Step 8 — Report Generator (Notebook 07)
 
 ```python
-CACHE_DIR         = '/kaggle/input/ich-preprocess-cache/cache'
+NPY_CACHE_DIR     = '/kaggle/input/ich-preprocess-cache/cache'
 MODEL_PATH        = '/kaggle/input/ich-train-session-4/best_model.pth'
 CHECKPOINT_PATH   = '/kaggle/input/ich-train-session-4/checkpoint.pth'
 CALIB_PARAMS_PATH = '/kaggle/input/ich-calibration/calibration_params.json'
@@ -274,7 +274,7 @@ print(os.path.exists(f'{PREV_CHECKPOINT_DIR}/checkpoint.pth'))
 | Notebook | Key outputs |
 |----------|-------------|
 | NB01 | `label_distribution.png`, `cooccurrence.png`, `windowing_comparison.png`, `health_check_nb01.json` |
-| NB02 | `cache/*.png`, `manifest.csv` (with `patient_id`), `normalization_stats.json`, `health_check_nb02.json` |
+| NB02 | `cache/*.npy`, `manifest.csv` (with `patient_id`), `normalization_stats.json`, `health_check_nb02.json` |
 | NB03 | `checkpoint.pth`, `best_model.pth`, `training_metrics.csv`, `learning_curves.png`, `roc_curve.png`, `health_check_nb03.json` |
 | NB04 | `ablation_results.csv`, `ablation_comparison.png`, `health_check_nb04.json` |
 | NB05 | `gradcam_tp.png`, `gradcam_fn.png`, `gradcam_fp.png`, `occlusion_sanity_check.png`, `health_check_nb05.json` |
