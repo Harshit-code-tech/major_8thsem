@@ -1,0 +1,13 @@
+doc.txt
+*.zip
+*.tar.gz
+*.log
+*.tmp
+*.pdf
+*.docx
+*.xlsx
+*.pptx
+*.exe
+__pycache__/
+*.pyc
+convert_to_pdf.py
