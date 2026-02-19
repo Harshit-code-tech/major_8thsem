@@ -87,7 +87,7 @@ Top right → Save Version → Save & Run All (Background Execution)
 ### 3.3 Find your output name
 After the run completes, go to:
 ```
-Notebook → Output tab → note the name (e.g., "ich-preprocess-cache")
+Notebook → Output tab → note the name (e.g., "nb02eda")
 ```
 This name goes into subsequent notebooks as `CACHE_INPUT_DIR`.
 
@@ -107,7 +107,7 @@ This is the multi-session workflow. **Do this carefully.**
 # In 03_train_session.ipynb config cell:
 PREV_CHECKPOINT_DIR  = None       # ← first run
 N_EPOCHS_THIS_SESSION = 5
-CACHE_INPUT_DIR = '/kaggle/input/ich-preprocess-cache'  # ← from Step 3
+CACHE_INPUT_DIR = '/kaggle/input/nb02eda'  # ← from Step 3
 ```
 
 **Add data**: Click "Add Data" → "Notebook Outputs" → search for your NB02 output name.
@@ -159,7 +159,7 @@ Each session:
 After all training sessions are complete:
 
 ```python
-CACHE_INPUT_DIR = '/kaggle/input/ich-preprocess-cache'
+CACHE_INPUT_DIR = '/kaggle/input/nb02eda'
 ```
 
 Add NB02 cache as data.  Run with GPU.  No commit needed (results saved to working dir).
@@ -171,7 +171,7 @@ Add NB02 cache as data.  Run with GPU.  No commit needed (results saved to worki
 ```python
 MODEL_PATH  = '/kaggle/input/ich-train-session-4/best_model.pth'  # ← last session
 CHECKPOINT  = '/kaggle/input/ich-train-session-4/checkpoint.pth'
-NPY_CACHE_DIR = '/kaggle/input/ich-preprocess-cache/cache'
+NPY_CACHE_DIR = '/kaggle/input/nb02eda/cache'
 ```
 
 Add both NB02 cache + final NB03 session as data.
@@ -189,7 +189,7 @@ Note the commit name, e.g. `ich-calibration`.
 ## Step 8 — Report Generator (Notebook 07)
 
 ```python
-NPY_CACHE_DIR     = '/kaggle/input/ich-preprocess-cache/cache'
+NPY_CACHE_DIR     = '/kaggle/input/nb02eda/cache'
 MODEL_PATH        = '/kaggle/input/ich-train-session-4/best_model.pth'
 CHECKPOINT_PATH   = '/kaggle/input/ich-train-session-4/checkpoint.pth'
 CALIB_PARAMS_PATH = '/kaggle/input/ich-calibration/calibration_params.json'
