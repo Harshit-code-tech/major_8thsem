@@ -91,6 +91,10 @@ Notebook → Output tab → note the name (e.g., "ich-preprocess-cache")
 ```
 This name goes into subsequent notebooks as `CACHE_INPUT_DIR`.
 
+### 3.4 Disk budget
+- **Pilot** (10%, ~75K images × ~0.19 MB) ≈ **14 GB** — fits under the 19.5 GB commit limit
+- **Full** (750K images) ≈ **143 GB** — too large for a single commit; keep `SUBSET_FRAC = 0.1` for this project
+
 ---
 
 ## Step 4 — Training (Session Chaining)
