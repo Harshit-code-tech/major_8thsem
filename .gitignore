@@ -11,3 +11,4 @@ doc.txt
 __pycache__/
 *.pyc
 convert_to_pdf.py
+download/
