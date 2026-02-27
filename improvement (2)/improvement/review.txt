@@ -1,0 +1,613 @@
+here are the reviews,
+
+i am feeding 256*256 in b4,
+but it is meant for 380 resolution,
+B0:
+
+Single model
+
+Stable
+
+Converged
+
+0.958 slice AUC
+
+B4 (current):
+
+5 folds
+
+2.5D
+
+Larger capacity
+
+0.944 average slice AUC
+
+Checkpoint saving bug
+
+Right now, B0 is stronger.
+B4 has headroom.
+
+Because:
+
+17.6M parameters vs 5.3M
+
+2.5D input
+
+Multi-fold setup
+
+It should beat B0.
+
+The fact that it doesn’t means:
+
+You are not yet optimizing it correctly.
+
+What You Must Fix Before Judging B4
+
+Train at 320 or 380 resolution.
+
+Use cosine LR schedule.
+
+Increase total epochs to 25–30 per fold.
+
+Fix checkpoint saving for all folds.
+
+Ensure identical AUC calculation method as B0.
+
+00_preprocess_metadata.ipynb Review
+✅ What You Did Right
+
+75,280 cached slices
+
+18,416 patients
+
+Proper patient-level fold split
+
+Zero leakage
+
+2.5D neighbor coverage = 72%
+
+Stratified folds (≈14% pos in each)
+
+That’s clean.
+
+Structurally solid.
+
+No red flags here.
+
+If anything, this is stronger than your earlier B0 pipeline.
+
+🔎 01_training.ipynb Review (B4 2.5D)
+Model
+
+tf_efficientnet_b4
+
+9-channel input (2.5D)
+
+17.6M parameters
+
+1792 backbone features
+
+This is a serious upgrade over B0.
+
+📊 Now The Important Part — Performance
+
+Let’s compare properly.
+
+Your B0 peak:
+
+Slice AUC ≈ 0.9579
+
+B4 current peak per fold (auc_any)
+
+Looking at the highest values:
+
+Fold 0 → 0.93996
+
+Fold 1 → 0.94672
+
+Fold 2 → 0.93952
+
+Fold 3 → 0.94345
+
+Fold 4 → 0.94495
+
+So best single fold ≈ 0.9467
+
+Mean across folds roughly ≈ 0.942–0.944
+
+🚨 Brutal Truth
+
+Right now:
+
+B4 is underperforming B0.
+
+B0: ~0.958
+B4: ~0.944
+
+That’s not a small gap.
+
+That’s 1.4%–1.6% AUC difference.
+
+In medical ML, that’s huge.
+
+🧠 Why Is This Happening?
+
+One of these is true:
+
+1️⃣ B4 not trained long enough
+
+You’re stopping early per session.
+Maybe full 20 epochs per fold not fully completed.
+
+2️⃣ Learning rate too conservative
+
+B4 needs more aggressive LR schedule.
+
+3️⃣ Image size mismatch
+
+You’re feeding 256×256 into B4.
+
+B4 is designed for 380 resolution.
+
+At 256, you're not using its strength.
+
+This is the most likely issue.
+
+4️⃣ Optimization instability
+
+Val loss spikes in some folds (see fold 3 & 1).
+
+That suggests:
+
+Overfitting
+
+Or too high LR after unfreeze
+
+Or weak regularization
+
+
+
+
+
+please fix issues,
+
+b0 efficientnet is used in notebooks folder, and b4 is used in improvement folder,
+
+
+
+now for changes in 02_preprocess_cache( in improvement folder, yes i just copy paste what was in notebook , because that folder is for b0, improvement folder is for b4)
+
+🎯 Goal
+
+Prepare cache optimized for:
+
+EfficientNet-B4
+
+2.5D (9-channel)
+
+Higher resolution
+
+Stable training
+
+🔥 1️⃣ Increase Resolution — But Do It Correctly
+Change:
+
+In 02_preprocess_cache.ipynb:
+
+IMG_SIZE = 256
+
+Change to:
+
+IMG_SIZE = 380
+
+But don’t just resize blindly.
+
+Use:
+
+cv2.resize(img, (IMG_SIZE, IMG_SIZE), interpolation=cv2.INTER_AREA)
+
+INTER_AREA is better for downsampling medical images.
+
+🔥 2️⃣ Switch Cache dtype from uint8 → float16
+
+Right now you’re storing uint8.
+
+For B4 at 380, go:
+
+arr = arr.astype(np.float16)
+
+Why?
+
+Cuts memory in half vs float32
+
+Much better dynamic precision than uint8
+
+No precision loss issues for CT
+
+Storage comparison at 380:
+
+uint8 (3ch): ~31GB
+
+float16 (3ch): ~62GB
+
+float16 (9ch): ~186GB
+
+You have 420GB — this is fine.
+
+🔥 3️⃣ Store 2.5D Directly in Cache (9-channel)
+
+Right now you’re stacking neighbors during training.
+
+Don’t.
+
+Modify cache builder to directly save:
+
+(prev, current, next)
+
+As:
+
+(380, 380, 9)
+
+So each NPY is ready for B4 input.
+
+Why?
+
+Faster training
+
+Less CPU bottleneck
+
+Cleaner data loader
+
+No on-the-fly disk reads for neighbors
+
+Storage at 380, 9ch, float16:
+
+≈ 186GB
+
+4️⃣ Use True Multi-Window Channel Encoding
+
+Right now you probably use 3 windows:
+
+Brain
+Subdural
+Bone
+
+For B4, upgrade this:
+
+Instead of stacking 3 windows once,
+use 3 windows × 3 slices = 9 channels.
+
+Meaning:
+
+For each slice:
+
+(prev_brain, prev_subdural, prev_bone,
+ curr_brain, curr_subdural, curr_bone,
+ next_brain, next_subdural, next_bone)
+
+This is correct 2.5D multi-window encoding.
+
+🔥 5️⃣ Normalize During Cache Creation
+
+Instead of normalizing in training:
+
+Normalize once during caching.
+
+Example:
+
+img = (img - mean) / std
+
+Store normalized float16.
+
+Then in training:
+No normalization transform needed.
+
+Cleaner pipeline.
+Less GPU waste.
+
+🔥 6️⃣ Save Metadata Alongside
+
+Save per-image metadata:
+
+patient_id
+
+slice_index
+
+position
+
+series_uid
+
+This allows future:
+
+3D modeling
+
+Volume-based sampling
+
+Better patient aggregation
+
+,,
+
+also as per the changes in cache file, please adopt the changes in nb00 and nb01_training too,
+eg:
+input shape: [B, 9, 380, 380]
+Change model backbone:
+
+timm.create_model('tf_efficientnet_b4', in_chans=9)
+
+Remove resize transform (if exists).
+
+Remove normalization transform (if pre-normalized in cache).
+
+Parameter Count Check
+
+You printed:
+
+tf_efficientnet_b4 2.5D: 17.6M params
+
+True B4 normally ~19M params.
+
+17.6M suggests:
+
+Either classifier modified
+
+Or pretrained=False
+
+Or stem altered
+
+This matters.
+
+If you are NOT using pretrained weights,
+that alone explains underperformance.
+
+For medical tasks, pretrained almost always wins.
+Why B4 Might Be Underperforming
+
+Given your logs, likely causes:
+
+A) Learning rate not scaled for bigger model
+
+If you used same LR as B0,
+B4 may be slightly too aggressive.
+
+Bigger models need:
+
+Lower LR or longer warmup.
+
+B) Batch size too small
+
+If batch < 8:
+
+BatchNorm unstable
+
+Generalization worse
+
+B4 needs either:
+
+Larger batch
+or
+
+Gradient accumulation
+
+C) Insufficient warmup
+
+Your plan:
+
+2 frozen + 18 full training
+
+That may be too short for B4 to fully adapt.
+
+D) Regularization mismatch
+
+If dropout same as B0,
+B4 might under-regularize.
+What You Should Fix BEFORE Rebuilding Cache
+Confirm Pretrained=True
+Adjust LR Schedule
+
+For B4 try:
+
+Lower base LR
+
+Cosine annealing
+
+3–5 epoch warmup
+
+25–30 total epochs
+
+Your plateau at epoch ~10–12
+means training is too short for B4.
+LR = 3e-4 — Probably The Problem
+
+For B0, 3e-4 is fine.
+
+For B4 (17M params, deeper network), 3e-4 is borderline aggressive.
+
+Especially when:
+
+in_ch = 9 (stem modified)
+
+classifier modified
+
+medical data (smaller effective diversity)
+
+What your curves show:
+
+Fast early AUC jump.
+
+Plateau around 0.94.
+
+Oscillations.
+
+That looks like LR slightly too high after unfreeze.
+
+3️⃣ Important Insight
+
+You are training multi-label (6 classes):
+
+any + 5 subtypes
+
+But your main comparison against B0 is probably on auc_any.
+
+Multi-label learning can slightly reduce main-head performance if:
+
+Subtype labels are noisy
+
+Loss weighting not tuned
+
+Class imbalance not balanced properly
+
+This might explain B4 < B0.
+
+Your B0 earlier was binary “any”.
+
+B4 is doing harder task.
+
+That is not apples-to-apples.
+
+This is important.
+
+For EfficientNet-B4 at 380 resolution, what should BatchNorm be?
+
+Let’s break this cleanly.
+
+1️⃣ First: What Actually Changes at 380?
+
+Resolution ↑
+Memory ↑
+Compute ↑
+Batch size ↓ (usually)
+
+BatchNorm behavior depends heavily on effective batch size.
+
+So the real question is:
+
+What batch size can you sustain at 380 with 9 channels?
+
+On a 4050:
+
+380×380
+
+9 channels
+
+B4
+
+float16 (AMP)
+
+You’ll likely land at:
+
+Batch size 4–8
+
+Not 16.
+
+That changes the BN discussion.
+
+2️⃣ If Batch Size ≥ 8
+
+You can keep:
+
+nn.BatchNorm2d
+
+Default behavior.
+
+Stable enough.
+
+3️⃣ If Batch Size ≤ 4
+
+Now BatchNorm becomes noisy.
+
+Then you have options:
+
+Option A — Freeze BN (most common in medical)
+
+After loading pretrained weights:
+
+for m in model.modules():
+    if isinstance(m, nn.BatchNorm2d):
+        m.eval()
+        m.requires_grad_(False)
+
+This keeps running stats fixed.
+
+Very common in medical imaging when batch small.
+
+Option B — SyncBatchNorm (only if multi-GPU)
+
+If training on multiple GPUs:
+
+model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+
+Not relevant if single GPU.
+
+Option C — Replace BN with GroupNorm
+
+More stable for small batches.
+
+But EfficientNet was pretrained with BN.
+
+Replacing it reduces transfer learning effectiveness.
+
+I would NOT do this unless batch ≤ 2.
+
+4️⃣ What I Would Do At 380
+
+Given your setup:
+
+4050 GPU
+
+Likely batch 6–8 with AMP
+
+I would:
+
+Phase 1 (warmup, frozen backbone)
+
+Keep BN trainable.
+
+Phase 2 (full training)
+
+If batch < 8:
+
+Freeze BN layers.
+
+This stabilizes training and often improves validation AUC.
+
+5️⃣ Important Subtlety
+
+You modified input channels from 3 → 9.
+
+The first conv stem was reinitialized.
+
+That means:
+
+Early BN layers may not match pretrained statistics.
+
+So freezing all BN immediately may not be optimal.
+
+Better approach:
+
+Let BN train during warmup.
+
+Freeze after 3–5 epochs.
+
+6️⃣ Final Recommendation (Concrete)
+
+If 380 resolution:
+
+Use:
+
+AMP (mixed precision)
+
+Batch size target: 8
+
+BASE_LR: 1e-4 to 1.5e-4
+
+Cosine schedule
+
+30 epochs
+
+Warmup 5 epochs
+
+BN Strategy:
+
+Keep BN trainable during warmup.
+
+If batch < 8 → freeze BN after warmup.
