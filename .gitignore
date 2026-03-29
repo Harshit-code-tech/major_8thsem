@@ -11,7 +11,8 @@ doc.txt
 __pycache__/
 *.pyc
 convert_to_pdf.py
-
+sender/review/
+docs/
 # Specific files to ignore
 improvement*
 notebooks/

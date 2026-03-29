@@ -190,17 +190,17 @@ To prevent diagnostic claims and ensure consistency:
 
 ```
 1. CT Brain Image Input
-   ↓
+  ↓
 2. Image Preprocessing Module
-   ↓
+  ↓
 3. CNN-Based Hemorrhage Detection Model
-   ↓
+  ↓
 4. Explainability Module (Grad-CAM)
-   ↓
+  ↓
 5. Confidence Assessment
-   ↓
+  ↓
 6. Structured Clinical Report Generator
-   ↓
+  ↓
 7. Output for Medical Review
 ```
 
