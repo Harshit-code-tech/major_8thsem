@@ -22,4 +22,7 @@ sender/reports/
 sender/report_tables/
 sender/comparison_runs/
 sender/download_imp/
-sender/webapp/
+sender/compare_inference_models.py
+sender/cuda_test.py
+sender/sample_rsna_train_subset.py
+sender/webapp/uploads

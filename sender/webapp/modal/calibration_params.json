@@ -1,0 +1,14 @@
+{
+  "method": "temperature",
+  "temperature": 1.9501348733901978,
+  "base_threshold": 0.3318,
+  "calibrated_threshold": 0.5381094217300415,
+  "high_threshold": 0.75,
+  "low_threshold": 0.35,
+  "raw_ece": 0.1294579229007709,
+  "cal_ece": 0.1553162168408877,
+  "raw_brier": 0.1088251068439111,
+  "cal_brier": 0.09979141470957854,
+  "hc_ece_raw": 0.3524677678298724,
+  "hc_ece_cal": 0.21331685294278532
+}
