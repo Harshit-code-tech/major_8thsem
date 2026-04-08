@@ -1,6 +1,6 @@
 # Major Project Documentation
 
-## AI-Assisted CT-Based Intracranial Hemorrhage Detection with Explainability and Clinical Reporting
+## AI-Assisted CT scan-Based Intracranial Hemorrhage Detection with Explainabilit and Clinical Reporting
 
 ---
 
